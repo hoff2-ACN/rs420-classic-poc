@@ -1,4 +1,4 @@
-// (c) 2013-2015 Don Coleman
+// (c) 2013-2015 Don seria
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -121,7 +121,7 @@ var app = {
         };
 
         var data = messageInput.value;
-        bluetoothSerial.write(data, success, failure);
+        bluetoothSerial.write(data + "\r\n", success, failure);
     },
     disconnect: function(event) {
         bluetoothSerial.disconnect(app.showMainPage, app.onError);
