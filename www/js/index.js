@@ -21,25 +21,27 @@
 
 function initializeStateMachine() {
     return new StateMachine({
-        init: 'solid',
+        init: 'not_reading',
         transitions: [
-            {name: 'melt', from: 'solid', to: 'liquid'},
-            {name: 'freeze', from: 'liquid', to: 'solid'},
-            {name: 'vaporize', from: 'liquid', to: 'gas'},
-            {name: 'condense', from: 'gas', to: 'liquid'}
+            {name: 'readTag', from: 'not_reading', to: 'reading'},
+            {name: 'gotoStandby', from: 'reading', to: 'not_reading'}
         ],
         methods: {
-            onMelt: function () {
-                console.log('I melted')
+            onReadTag: function () {
+                console.log('Reading...')
+                const success = function () {
+                    resultDiv.innerHTML = resultDiv.innerHTML + "Reading tag...<br/>";
+                    resultDiv.scrollTop = resultDiv.scrollHeight;
+                };
+
+                const failure = function () {
+                    alert("Unable to send read command.");
+                };
+
+                bluetoothSerial.write("read\r\n", success, failure);
             },
-            onFreeze: function () {
-                console.log('I froze')
-            },
-            onVaporize: function () {
-                console.log('I vaporized')
-            },
-            onCondense: function () {
-                console.log('I condensed')
+            onGotoStandby: function () {
+                console.log('Standing by...')
             }
         }
     });
@@ -49,8 +51,8 @@ var app = {
     initialize: function () {
         this.bindEvents();
         this.showMainPage();
-        this.machine = initializeStateMachine();
-        console.log("FSM Current State: " + this.machine.state);
+        app.machine = initializeStateMachine();
+        console.log("FSM Current State: " + app.machine.state);
     },
 
     bindEvents: function () {
@@ -138,13 +140,41 @@ var app = {
     },
 
     handleReadButton: function (event) {
-        console.log('Hello From The Read Button');
+        app.machine.readTag();
+        setTimeout(() => {
+            if (app.machine.state === 'reading') {
+                app.machine.gotoStandby()
+            }
+        }, 11000);
     },
 
     onData: function (data) { // data received from Arduino
+        const strippedData = data.trim();
+
         console.log(data);
-        resultDiv.innerHTML = resultDiv.innerHTML + "Received: " + data + "<br/>";
-        resultDiv.scrollTop = resultDiv.scrollHeight;
+
+        const display = function(message) {
+            resultDiv.innerHTML = resultDiv.innerHTML + "Received: " + message + "<br/>";
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        };
+
+        const displayTag = function(tag) {
+            resultDiv.innerHTML = resultDiv.innerHTML + "Read Ear Tag: " + tag + "<br/>";
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        };
+
+        display(data);
+
+        switch(app.machine.state) {
+            case "reading":
+                if (strippedData !== 'read' && strippedData !== 'OK') {
+                    displayTag(data);
+                    app.machine.gotoStandby();
+                }
+                break;
+            default:
+                break;
+        }
     },
     sendData: function (event) { // send data to Arduino
 
