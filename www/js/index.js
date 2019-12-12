@@ -141,7 +141,7 @@ var app = {
 
     handleReadButton: function (event) {
         app.machine.readTag();
-        setTimeout(() => {
+        app.timeout = setTimeout(() => {
             if (app.machine.state === 'reading') {
                 app.machine.gotoStandby()
             }
@@ -151,7 +151,7 @@ var app = {
     onData: function (data) { // data received from Arduino
         const strippedData = data.trim();
 
-        console.log(data);
+        console.log(strippedData);
 
         const display = function(message) {
             resultDiv.innerHTML = resultDiv.innerHTML + "Received: " + message + "<br/>";
@@ -163,11 +163,12 @@ var app = {
             resultDiv.scrollTop = resultDiv.scrollHeight;
         };
 
-        display(data);
+        display(strippedData);
 
         switch(app.machine.state) {
             case "reading":
                 if (strippedData !== 'read' && strippedData !== 'OK') {
+                    clearTimeout(app.timeout);
                     displayTag(data);
                     app.machine.gotoStandby();
                 }
